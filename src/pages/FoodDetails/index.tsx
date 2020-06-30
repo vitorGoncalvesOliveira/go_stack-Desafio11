@@ -74,11 +74,11 @@ const FoodDetails: React.FC = () => {
   useEffect(() => {
     async function loadFood(): Promise<void> {
       // Load a specific food with extras based on routeParams id
-      const selectFood = await api.get<Food>(`/foods/${routeParams}`);
+      const selectFood = await api.get<Food>(`/foods/${routeParams.id}`);
       const alreadyFavorite = await api.get(`/favorites`);
 
       const isFavoriteFood = alreadyFavorite.data.find(
-        favorite => favorite.id === routeParams,
+        favorite => favorite.id === routeParams.id,
       );
 
       if (isFavoriteFood) setIsFavorite(true);
@@ -86,11 +86,11 @@ const FoodDetails: React.FC = () => {
       selectFood.data.formattedPrice = formatValue(selectFood.data.price);
 
       let complements = selectFood.data.extras.map(extra => {
-        extra.quantity = 1;
+        extra.quantity = 0;
         return extra;
       });
-      setExtras(complements);
       setFood(selectFood.data);
+      setExtras(complements);
     }
 
     loadFood();
@@ -100,7 +100,7 @@ const FoodDetails: React.FC = () => {
     // Increment extra quantity
 
     const extrasIncrement = extras.map(complement => {
-      if (complement.id === id) ++complement.quantity;
+      if (complement.id === id) complement.quantity += 1;
       return complement;
     });
 
@@ -111,7 +111,7 @@ const FoodDetails: React.FC = () => {
     // Decrement extra quantity
     const extrasDecrement = extras.map(complement => {
       if (complement.id === id && complement.quantity > 1) {
-        --complement.quantity;
+        complement.quantity -= 1;
       }
       return complement;
     });
@@ -155,8 +155,12 @@ const FoodDetails: React.FC = () => {
 
   async function handleFinishOrder(): Promise<void> {
     // Finish the order and save on the API
-    await api.post('/orders', food);
-    navigation.navigate('Home');
+    const newOrder = food;
+    delete newOrder.id;
+    newOrder.formattedPrice = cartTotal;
+    await api.post('/orders', newOrder);
+
+    navigation.goBack();
   }
 
   // Calculate the correct icon name

@@ -55,23 +55,21 @@ const Dashboard: React.FC = () => {
   const navigation = useNavigation();
 
   async function handleNavigate(id: number): Promise<void> {
-    // Navigate do ProductDetails page
-
-    navigation.navigate('FoodDetails', id);
+    navigation.navigate('FoodDetails', { id });
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
-      // Load Foods from API
-      const filter = selectedCategory
-        ? `category_like=${selectedCategory}`
-        : `name_like=${searchValue}`;
-      const foodsInApi = await api.get<Food[]>(`/foods?${filter}`);
-      const initialFoods = foodsInApi.data.map(food => {
-        food.formattedPrice = formatValue(food.price);
-        return food;
+      const foodsInApi = await api.get<Food[]>(`/foods`, {
+        params: {
+          category_like: selectedCategory,
+          name_like: searchValue,
+        },
       });
-      setFoods(initialFoods);
+      foodsInApi.data.forEach(food => {
+        food.formattedPrice = formatValue(food.price);
+      });
+      setFoods(foodsInApi.data);
     }
 
     loadFoods();
