@@ -75,14 +75,22 @@ const FoodDetails: React.FC = () => {
     async function loadFood(): Promise<void> {
       // Load a specific food with extras based on routeParams id
       const selectFood = await api.get<Food>(`/foods/${routeParams}`);
+      const alreadyFavorite = await api.get(`/favorites`);
+
+      const isFavoriteFood = alreadyFavorite.data.find(
+        favorite => favorite.id === routeParams,
+      );
+
+      if (isFavoriteFood) setIsFavorite(true);
+
       selectFood.data.formattedPrice = formatValue(selectFood.data.price);
 
-      setFood(selectFood.data);
       let complements = selectFood.data.extras.map(extra => {
-        extra.quantity = 0;
+        extra.quantity = 1;
         return extra;
       });
       setExtras(complements);
+      setFood(selectFood.data);
     }
 
     loadFood();
@@ -90,8 +98,9 @@ const FoodDetails: React.FC = () => {
 
   function handleIncrementExtra(id: number): void {
     // Increment extra quantity
+
     const extrasIncrement = extras.map(complement => {
-      if (complement.id === id) complement.quantity += 1;
+      if (complement.id === id) ++complement.quantity;
       return complement;
     });
 
@@ -101,8 +110,8 @@ const FoodDetails: React.FC = () => {
   function handleDecrementExtra(id: number): void {
     // Decrement extra quantity
     const extrasDecrement = extras.map(complement => {
-      if (complement.id === id && complement.quantity > 0) {
-        complement.quantity -= 1;
+      if (complement.id === id && complement.quantity > 1) {
+        --complement.quantity;
       }
       return complement;
     });
@@ -124,13 +133,15 @@ const FoodDetails: React.FC = () => {
     setFoodQuantity(newQuantity);
   }
 
-  const toggleFavorite = useCallback(() => {
+  const toggleFavorite = useCallback(async () => {
     // Toggle if food is favorite or not
+
     if (isFavorite) {
       setIsFavorite(false);
+      await api.delete(`/favorites/${food.id}`);
     } else {
       setIsFavorite(true);
-      api.post('/favorites', food);
+      await api.post('/favorites', food);
     }
   }, [isFavorite, food]);
 
