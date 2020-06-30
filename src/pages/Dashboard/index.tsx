@@ -35,6 +35,7 @@ interface Food {
   price: number;
   thumbnail_url: string;
   formattedPrice: string;
+  category: number;
 }
 
 interface Category {
@@ -55,11 +56,28 @@ const Dashboard: React.FC = () => {
 
   async function handleNavigate(id: number): Promise<void> {
     // Navigate do ProductDetails page
+
+    navigation.navigate('FoodDetails', id);
   }
 
   useEffect(() => {
     async function loadFoods(): Promise<void> {
       // Load Foods from API
+      const foodsInApi = await api.get<Food[]>('/foods');
+      foodsInApi.data.forEach(food => {
+        food.formattedPrice = formatValue(food.price);
+      });
+
+      const foodsInDashboard = selectedCategory
+        ? foodsInApi.data.filter(food => food.category === selectedCategory)
+        : foodsInApi.data;
+
+      const foodSearched =
+        searchValue.length > 0
+          ? foodsInDashboard.filter(food => food.name.includes(searchValue))
+          : foodsInDashboard;
+
+      setFoods(foodSearched);
     }
 
     loadFoods();
@@ -68,6 +86,8 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     async function loadCategories(): Promise<void> {
       // Load categories from API
+      const categoriesInApi = await api.get('/categories');
+      setCategories(categoriesInApi.data);
     }
 
     loadCategories();
@@ -75,6 +95,9 @@ const Dashboard: React.FC = () => {
 
   function handleSelectCategory(id: number): void {
     // Select / deselect category
+    if (selectedCategory === id) {
+      setSelectedCategory(undefined);
+    } else setSelectedCategory(id);
   }
 
   return (
